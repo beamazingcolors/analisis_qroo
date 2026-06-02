@@ -50,6 +50,12 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-4">
+                <!-- Novedad: Campo para ingresar la API Key -->
+                <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 focus-within:border-blue-500 transition-colors shadow-inner shadow-slate-900/50">
+                    <i data-lucide="key" class="text-slate-400 w-4 h-4"></i>
+                    <input type="password" id="api-key-input" placeholder="Pega tu API Key aquí..." class="bg-transparent border-none text-xs text-white focus:outline-none w-32 md:w-48 placeholder-slate-500" onchange="saveApiKey()" autocomplete="off">
+                </div>
+                
                 <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
                     <i data-lucide="clock" class="text-amber-400 w-4 h-4"></i>
                     <span class="text-xs text-slate-300">Próxima investigación en: <strong id="timer-display" class="text-white font-mono">--h --m --s</strong></span>
@@ -254,14 +260,19 @@
 
     <script>
         // --- CONFIGURACIÓN E IA ---
-        // ATENCIÓN: Las API Keys nunca deben estar expuestas en el código frontend en producción.
-        // GitHub te bloqueó el commit porque detectarón la clave expuesta.
-        // Para entornos de desarrollo local o demostraciones privadas, descomenta la siguiente línea y pega tu clave.
-        // const API_KEY = "TU_API_KEY_AQUI"; 
-        
-        // Para evitar bloqueos en GitHub, dejamos la clave vacía o usamos una variable de entorno si tuvieras un backend.
-        const API_KEY = ""; 
-        const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
+        // La API Key ahora se lee de la memoria del navegador para evitar hardcodearla
+        let API_KEY = localStorage.getItem('gemini_api_key') || ""; 
+
+        // Función para guardar la llave cuando el usuario la escribe
+        function saveApiKey() {
+            API_KEY = document.getElementById('api-key-input').value.trim();
+            if (API_KEY) {
+                localStorage.setItem('gemini_api_key', API_KEY);
+                document.getElementById('alert-error').classList.add('hidden');
+            } else {
+                localStorage.removeItem('gemini_api_key');
+            }
+        }
 
         let appData = {
             marketOverview: { averageRoi: 11.2, averageOccupancy: 76, totalPropertiesTracked: 20, marketTrend: "Alta demanda en zona hotelera y Puerto Cancún. Fuerte interés de nómadas digitales e inversionistas extranjeros." },
@@ -318,6 +329,9 @@
 
         // --- INICIALIZACIÓN ---
         window.onload = () => {
+            // Cargar la llave en el input visualmente si ya existía guardada
+            document.getElementById('api-key-input').value = API_KEY;
+            
             lucide.createIcons();
             startTimer();
             updateUI();
@@ -356,7 +370,16 @@
 
         // --- OBTENCIÓN DE DATOS (GEMINI API) ---
         async function fetchMarketData() {
+            // Validar si el usuario ha ingresado la llave
+            if (!API_KEY) {
+                document.getElementById('error-message').innerText = "Por favor, pega tu API Key de Gemini en la caja de texto superior para conectarte a internet en tiempo real. Por ahora, te mostraremos los datos de respaldo.";
+                document.getElementById('alert-error').classList.remove('hidden');
+                updateUI(); // Renderiza los datos cacheados
+                return; // Detiene la ejecución para no generar un error
+            }
+
             setLoading(true);
+            const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key=${API_KEY}`;
             
             const prompt = `
             Eres un analista experto en bienes raíces de lujo. Investiga en la red (usando Google Search) información MUY detallada y actualizada al día de hoy sobre desarrollos inmobiliarios y departamentos de lujo en preventa y venta en Cancún y la Riviera Maya. 
