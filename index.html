@@ -159,6 +159,17 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Fuentes APA -->
+                <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-white font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="book-open" class="text-blue-400 w-5 h-5"></i> 
+                        Fuentes de Investigación (Formato APA)
+                    </h3>
+                    <ul id="sources-list" class="space-y-2 text-xs text-slate-400 list-disc pl-5 leading-relaxed">
+                        <li>Cargando fuentes de información...</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- VISTA 2: COMPARADOR -->
@@ -247,11 +258,16 @@
         const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
         let appData = {
-            marketOverview: { averageRoi: 10.5, averageOccupancy: 72, totalPropertiesTracked: 15, marketTrend: "Alta demanda en zona hotelera y Puerto Cancún. Fuerte interés extranjero." },
+            marketOverview: { averageRoi: 10.5, averageOccupancy: 72, totalPropertiesTracked: 20, marketTrend: "Alta demanda en zona hotelera y Puerto Cancún. Fuerte interés extranjero." },
             properties: [
                 { id: "nautica-res", name: "Nautica Residences", location: "Puerto Cancún", status: "Preventa", towers: 1, constructionDate: "2024", deliveryDate: "2026", roi: 14.5, salesPercentage: 75, occupancyEstimate: 85, priceRange: "$800k - $2.5M USD", amenitiesList: ["Marina Privada", "Club de Playa", "Spa", "Helipuerto"], details: "Proyecto emblemático en Puerto Cancún con vistas inigualables y diseño vanguardista. Alta tracción en redes sociales por su exclusividad." },
                 { id: "shark-tower", name: "Shark Tower", location: "Puerto Cancún", status: "Venta", towers: 1, constructionDate: "2019", deliveryDate: "2022", roi: 9.8, salesPercentage: 95, occupancyEstimate: 80, priceRange: "$1.2M - $4M USD", amenitiesList: ["Laboratorio de Tiburones", "Alberca Infinity", "Cine"], details: "Diseño icónico en forma de aleta de tiburón. Consolidado en el mercado." },
                 { id: "sls-cancun", name: "SLS Cancún", location: "Puerto Cancún", status: "Venta", towers: 1, constructionDate: "2018", deliveryDate: "2021", roi: 11.2, salesPercentage: 100, occupancyEstimate: 90, priceRange: "$1.5M - $5M USD", amenitiesList: ["Playa Privada", "Cancha de Tenis", "Restaurante de Autor"], details: "Desarrollo de súper lujo ya consolidado, alta demanda de reventa." }
+            ],
+            sourcesAPA: [
+                "Nautica Residences. (2026). Sitio web oficial. Recuperado de la red.",
+                "Forbes México. (2026). Reporte del auge inmobiliario de lujo en la Riviera Maya.",
+                "AMPI (Asociación Mexicana de Profesionales Inmobiliarios). (2026). Estadísticas de inversión en Cancún y el Caribe Mexicano."
             ]
         };
 
@@ -259,9 +275,10 @@
             type: "OBJECT",
             properties: {
                 marketOverview: { type: "OBJECT", properties: { averageRoi: { type: "NUMBER" }, averageOccupancy: { type: "NUMBER" }, totalPropertiesTracked: { type: "NUMBER" }, marketTrend: { type: "STRING" } } },
-                properties: { type: "ARRAY", items: { type: "OBJECT", properties: { id: { type: "STRING" }, name: { type: "STRING" }, location: { type: "STRING" }, status: { type: "STRING" }, towers: { type: "NUMBER" }, constructionDate: { type: "STRING" }, deliveryDate: { type: "STRING" }, roi: { type: "NUMBER" }, salesPercentage: { type: "NUMBER" }, occupancyEstimate: { type: "NUMBER" }, priceRange: { type: "STRING" }, amenitiesList: { type: "ARRAY", items: { type: "STRING" } }, details: { type: "STRING" } }, required: ["id", "name", "location", "status", "towers", "deliveryDate", "roi", "salesPercentage", "occupancyEstimate"] } }
+                properties: { type: "ARRAY", items: { type: "OBJECT", properties: { id: { type: "STRING" }, name: { type: "STRING" }, location: { type: "STRING" }, status: { type: "STRING" }, towers: { type: "NUMBER" }, constructionDate: { type: "STRING" }, deliveryDate: { type: "STRING" }, roi: { type: "NUMBER" }, salesPercentage: { type: "NUMBER" }, occupancyEstimate: { type: "NUMBER" }, priceRange: { type: "STRING" }, amenitiesList: { type: "ARRAY", items: { type: "STRING" } }, details: { type: "STRING" } }, required: ["id", "name", "location", "status", "towers", "deliveryDate", "roi", "salesPercentage", "occupancyEstimate"] } },
+                sourcesAPA: { type: "ARRAY", description: "Fuentes de información consultadas en formato APA", items: { type: "STRING" } }
             },
-            required: ["marketOverview", "properties"]
+            required: ["marketOverview", "properties", "sourcesAPA"]
         };
 
         // --- ESTADO LOCAL ---
@@ -315,13 +332,15 @@
         // --- OBTENCIÓN DE DATOS (GEMINI API) ---
         async function fetchMarketData() {
             setLoading(true);
+            
             const prompt = `
             Eres un analista experto en bienes raíces de lujo. Investiga en la red (usando Google Search) información MUY detallada y actualizada al día de hoy sobre desarrollos inmobiliarios y departamentos de lujo en preventa y venta en Cancún y la Riviera Maya. 
             Reglas:
             1. Debes incluir SIEMPRE a 'Nautica Residences' como uno de los desarrollos principales. Su ID debe ser 'nautica-res'.
-            2. Investiga y agrega al menos otros 8 a 15 desarrollos competidores reales.
+            2. Investiga y agrega OBLIGATORIAMENTE un mínimo de 20 desarrollos competidores reales (ej. SLS, Blume, Shark Tower, Aria, Kinesia, etc.). Tu respuesta debe contener al menos 20 elementos en el array de propiedades. Sé conciso en el campo 'details' para no exceder el límite de texto.
             3. Estima porcentajes reales de ventas (0-100), ocupación (0-100) y ROI anual esperado (%).
             4. Extrae detalles completos: entrega, amenidades, torres, rango de precios.
+            5. REQUISITO NUEVO: Extrae de qué páginas web, redes sociales o artículos de noticias obtuviste la información y formatea estas fuentes ESTRICTAMENTE en Formato APA (7ma edición). Agrega estas referencias al arreglo 'sourcesAPA'.
             Devuelve ESTRICTAMENTE en formato JSON validado según el esquema.`;
 
             const payload = {
@@ -386,6 +405,14 @@
             document.getElementById('kpi-nautica-roi').innerText = (nautica.roi || 0) + '%';
             document.getElementById('kpi-avg-occ').innerText = (appData.marketOverview.averageOccupancy || 0).toFixed(1) + '%';
             document.getElementById('trend-text').innerText = appData.marketOverview.marketTrend;
+
+            // Llenar Fuentes APA
+            const sourcesList = document.getElementById('sources-list');
+            if (appData.sourcesAPA && appData.sourcesAPA.length > 0) {
+                sourcesList.innerHTML = appData.sourcesAPA.map(source => `<li>${source}</li>`).join('');
+            } else {
+                sourcesList.innerHTML = '<li>Fuentes no disponibles.</li>';
+            }
 
             // Llenar Selectores del Comparador
             const s1 = document.getElementById('select-prop-1');
