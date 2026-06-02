@@ -4,34 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RivieraLuxury Analytics</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { slate: { 850: '#151f32', 900: '#0f172a', 950: '#020617' } }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        /* Custom scrollbar para la tabla */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Modal simple */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 min-h-screen">
@@ -48,524 +31,130 @@
                     <p class="text-xs text-slate-400">Inteligencia Inmobiliaria · Cancún & Riviera Maya</p>
                 </div>
             </div>
-
-            <div class="flex flex-wrap items-center gap-4">
-                <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-                    <i data-lucide="clock" class="text-amber-400 w-4 h-4"></i>
-                    <span class="text-xs text-slate-300">Próxima investigación en: <strong id="timer-display" class="text-white font-mono">--h --m --s</strong></span>
-                </div>
-                <button id="btn-refresh" onclick="fetchMarketData()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
-                    <i data-lucide="refresh-cw" id="icon-refresh" class="w-4 h-4"></i>
-                    <span id="text-refresh">Forzar Actualización Ahora</span>
-                </button>
+            <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">
+                <i data-lucide="database" class="w-3 h-3"></i> Base de datos editable local
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Alertas -->
-        <div id="alert-error" class="hidden mb-6 bg-red-900/20 border border-red-500/50 p-4 rounded-xl flex items-start gap-3 text-red-200">
-            <i data-lucide="alert-circle" class="shrink-0 mt-0.5 text-red-400 w-5 h-5"></i>
-            <div>
-                <p class="font-medium text-sm text-red-300">Aviso del Sistema</p>
-                <p id="error-message" class="text-xs opacity-90"></p>
-            </div>
-        </div>
-
-        <div id="loading-overlay" class="hidden mb-6 bg-blue-900/20 border border-blue-500/30 p-6 rounded-2xl flex flex-col items-center justify-center gap-4 animate-pulse">
-            <i data-lucide="search" class="text-blue-400 w-8 h-8 animate-bounce"></i>
-            <div class="text-center">
-                <p class="text-white font-medium mb-1">El motor IA está investigando en la red...</p>
-                <p class="text-xs text-slate-400 max-w-md">Buscando datos de preventas, ventas, ROI y actividad en redes sociales para Nautica Residences y competidores.</p>
-            </div>
-        </div>
-
-        <!-- Navegación de Pestañas -->
         <div class="flex space-x-1 bg-slate-900 p-1 rounded-xl w-fit mb-8 border border-slate-800">
-            <button onclick="setTab('dashboard')" id="tab-btn-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-blue-400 shadow">Dashboard y Métricas</button>
-            <button onclick="setTab('compare')" id="tab-btn-compare" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/50">Comparador Lado a Lado</button>
-            <button onclick="setTab('table')" id="tab-btn-table" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/50">Base de Datos Integral</button>
+            <button onclick="setTab('dashboard')" id="tab-btn-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-blue-400 shadow">Dashboard</button>
+            <button onclick="setTab('table')" id="tab-btn-table" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/50">Base de Datos</button>
         </div>
 
-        <!-- VISTAS -->
-        <div class="min-h-[500px]">
-            
-            <!-- VISTA 1: DASHBOARD -->
-            <div id="view-dashboard" class="fade-in space-y-6">
-                <!-- KPI Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
-                        <i data-lucide="building" class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity w-24 h-24 text-white"></i>
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i data-lucide="building" class="w-5 h-5"></i></div>
-                            <h3 class="text-slate-400 text-sm font-medium">Desarrollos Monitoreados</h3>
-                        </div>
-                        <div id="kpi-tracked" class="text-3xl font-bold text-white mb-1">0</div>
-                        <div class="text-emerald-400 text-xs font-medium flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Actualizado web/redes</div>
-                    </div>
-
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
-                        <i data-lucide="trending-up" class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity w-24 h-24 text-white"></i>
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
-                            <h3 class="text-slate-400 text-sm font-medium">ROI Promedio Mercado</h3>
-                        </div>
-                        <div id="kpi-avg-roi" class="text-3xl font-bold text-white mb-1">0%</div>
-                    </div>
-
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
-                        <i data-lucide="activity" class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity w-24 h-24 text-white"></i>
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i data-lucide="activity" class="w-5 h-5"></i></div>
-                            <h3 class="text-slate-400 text-sm font-medium">ROI Nautica Residences</h3>
-                        </div>
-                        <div id="kpi-nautica-roi" class="text-3xl font-bold text-white mb-1">0%</div>
-                        <div class="text-emerald-400 text-xs font-medium flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Líder del sector</div>
-                    </div>
-
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
-                        <i data-lucide="percent" class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity w-24 h-24 text-white"></i>
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><i data-lucide="percent" class="w-5 h-5"></i></div>
-                            <h3 class="text-slate-400 text-sm font-medium">Ocupación Promedio</h3>
-                        </div>
-                        <div id="kpi-avg-occ" class="text-3xl font-bold text-white mb-1">0%</div>
-                    </div>
+        <div id="view-dashboard" class="fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 h-96">
+                    <h3 class="text-white font-semibold mb-4">ROI por Desarrollo</h3>
+                    <canvas id="roiChart"></canvas>
                 </div>
-
-                <!-- Trend Box -->
-                <div class="bg-slate-800/50 border border-blue-500/30 p-5 rounded-xl flex gap-4 items-start">
-                    <i data-lucide="info" class="text-blue-400 shrink-0 mt-1 w-5 h-5"></i>
-                    <div>
-                        <h4 class="text-white font-semibold mb-1">Tendencia del Mercado</h4>
-                        <p id="trend-text" class="text-slate-300 text-sm leading-relaxed">Cargando análisis...</p>
-                    </div>
-                </div>
-
-                <!-- Gráficas -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg h-96">
-                        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="text-blue-400 w-5 h-5"></i> Top 7 Desarrollos por ROI (%)</h3>
-                        <div class="relative h-full w-full pb-8">
-                            <canvas id="roiChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-lg h-96">
-                        <h3 class="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="activity" class="text-blue-400 w-5 h-5"></i> Ventas vs Ocupación Estimada</h3>
-                        <div class="relative h-full w-full pb-8">
-                            <canvas id="salesOccChart"></canvas>
-                        </div>
-                    </div>
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 h-96">
+                    <h3 class="text-white font-semibold mb-4">Ventas vs Ocupación</h3>
+                    <canvas id="salesOccChart"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- VISTA 2: COMPARADOR -->
-            <div id="view-compare" class="hidden fade-in space-y-6">
-                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg">
-                    <div class="flex-1 w-full">
-                        <label class="block text-slate-400 text-xs mb-1">Propiedad A (Referencia)</label>
-                        <select id="select-prop-1" onchange="updateCompareView()" class="w-full bg-slate-900 border border-slate-700 text-white p-2 rounded-lg focus:outline-none focus:border-blue-500"></select>
-                    </div>
-                    <div class="bg-slate-700 p-2 rounded-full hidden md:block">
-                        <i data-lucide="refresh-cw" class="text-slate-400 w-5 h-5"></i>
-                    </div>
-                    <div class="flex-1 w-full">
-                        <label class="block text-slate-400 text-xs mb-1">Propiedad B (Competidor)</label>
-                        <select id="select-prop-2" onchange="updateCompareView()" class="w-full bg-slate-900 border border-slate-700 text-white p-2 rounded-lg focus:outline-none focus:border-blue-500"></select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div id="compare-col-1"></div>
-                    
-                    <div class="bg-slate-800 border border-slate-700 rounded-2xl flex flex-col items-center justify-center p-6 shadow-lg">
-                        <h3 class="text-white font-semibold mb-2">Análisis de Competitividad</h3>
-                        <p class="text-slate-400 text-xs text-center mb-6">Comparación de métricas clave normalizadas.</p>
-                        <div class="w-full aspect-square max-w-[300px] relative">
-                            <canvas id="radarChart"></canvas>
-                        </div>
-                        <div class="mt-6 w-full space-y-2">
-                           <div class="flex justify-between items-center p-2 bg-slate-900/50 rounded text-sm">
-                             <span class="text-slate-400">Ganador ROI:</span>
-                             <span id="winner-roi" class="text-white font-medium">-</span>
-                           </div>
-                           <div class="flex justify-between items-center p-2 bg-slate-900/50 rounded text-sm">
-                             <span class="text-slate-400">Líder en Ventas:</span>
-                             <span id="winner-sales" class="text-white font-medium">-</span>
-                           </div>
-                        </div>
-                    </div>
-
-                    <div id="compare-col-2"></div>
-                </div>
+        <div id="view-table" class="hidden fade-in">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-900/50">
+                        <tr><th class="p-4">Desarrollo</th><th class="p-4">ROI</th><th class="p-4">Ventas</th><th class="p-4">Acciones</th></tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
             </div>
-
-            <!-- VISTA 3: TABLA -->
-            <div id="view-table" class="hidden fade-in">
-                <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-lg overflow-hidden">
-                    <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 backdrop-blur-sm">
-                        <h3 class="text-white font-semibold text-lg flex items-center gap-2">
-                            <i data-lucide="search" class="text-blue-400 w-5 h-5"></i>
-                            Base de Datos de Propiedades
-                        </h3>
-                        <span id="table-count" class="text-slate-400 text-sm">0 resultados</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-900/50 text-slate-300 text-sm uppercase tracking-wider">
-                                    <th class="p-4 font-medium">Desarrollo</th>
-                                    <th class="p-4 font-medium">Ubicación</th>
-                                    <th class="p-4 font-medium">Estado</th>
-                                    <th class="p-4 font-medium">Torres</th>
-                                    <th class="p-4 font-medium">Entrega</th>
-                                    <th class="p-4 font-medium">ROI</th>
-                                    <th class="p-4 font-medium">Ventas</th>
-                                    <th class="p-4 font-medium">Precio</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body" class="text-slate-300 text-sm">
-                                <!-- Filas generadas por JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <footer class="border-t border-slate-800 mt-12 py-6 text-center text-slate-500 text-xs">
-        <p>Actualizado: <span id="last-update">--</span> • Desarrollado con Gemini Intelligence API en HTML Nativo</p>
-    </footer>
+    <!-- Modal Edición -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 w-full max-w-lg">
+            <h2 class="text-xl font-bold mb-4 text-white">Editar Desarrollo</h2>
+            <div id="edit-form" class="space-y-4"></div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="saveEdit()" class="bg-blue-600 px-4 py-2 rounded text-white">Guardar</button>
+                <button onclick="closeModal()" class="bg-slate-700 px-4 py-2 rounded text-white">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // --- CONFIGURACIÓN E IA ---
-        const API_KEY = ""; // El entorno inyectará esto
-        const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        let properties = JSON.parse(localStorage.getItem('riviera_data')) || [
+            { id: "nautica-res", name: "Nautica Residences", roi: 14.5, sales: 75, price: "$800k" },
+            { id: "shark-tower", name: "Shark Tower", roi: 9.8, sales: 95, price: "$1.2M" },
+            { id: "sls-cancun", name: "SLS Cancún", roi: 11.2, sales: 100, price: "$1.5M" },
+            { id: "blume", name: "Blume Boutique", roi: 10.5, sales: 88, price: "$900k" },
+            { id: "aria", name: "Aria Puerto Cancún", roi: 9.5, sales: 98, price: "$1.1M" },
+            { id: "kinesia", name: "Kinesia", roi: 12.0, sales: 60, price: "$300k" },
+            { id: "sls-harbour", name: "SLS Harbour Beach", roi: 10.8, sales: 92, price: "$1.4M" },
+            { id: "marea", name: "Marea", roi: 9.0, sales: 85, price: "$800k" },
+            { id: "alba", name: "ALBA", roi: 13.5, sales: 70, price: "$750k" },
+            { id: "be-towers", name: "Be Towers", roi: 8.5, sales: 99, price: "$600k" },
+            { id: "emerald", name: "Emerald", roi: 8.0, sales: 100, price: "$2M" },
+            { id: "sls-marina", name: "SLS Marina", roi: 11.5, sales: 85, price: "$1.6M" },
+            { id: "la-amada", name: "La Amada", roi: 10.0, sales: 90, price: "$500k" },
+            { id: "novo", name: "Novo Cancún", roi: 8.8, sales: 95, price: "$900k" },
+            { id: "isola", name: "Isola", roi: 8.2, sales: 98, price: "$500k" },
+            { id: "waldorf", name: "Waldorf Astoria", roi: 15.0, sales: 55, price: "$2.5M" },
+            { id: "w-res", name: "W Residences", roi: 14.0, sales: 65, price: "$1.8M" },
+            { id: "st-regis", name: "St. Regis", roi: 12.5, sales: 70, price: "$3M" },
+            { id: "una", name: "UNA", roi: 13.0, sales: 50, price: "$1M" },
+            { id: "ancora", name: "Ancora", roi: 11.0, sales: 80, price: "$400k" }
+        ];
 
-        let appData = {
-            marketOverview: { averageRoi: 10.5, averageOccupancy: 72, totalPropertiesTracked: 15, marketTrend: "Alta demanda en zona hotelera y Puerto Cancún. Fuerte interés extranjero." },
-            properties: [
-                { id: "nautica-res", name: "Nautica Residences", location: "Puerto Cancún", status: "Preventa", towers: 1, constructionDate: "2024", deliveryDate: "2026", roi: 14.5, salesPercentage: 75, occupancyEstimate: 85, priceRange: "$800k - $2.5M USD", amenitiesList: ["Marina Privada", "Club de Playa", "Spa", "Helipuerto"], details: "Proyecto emblemático en Puerto Cancún con vistas inigualables y diseño vanguardista. Alta tracción en redes sociales por su exclusividad." },
-                { id: "shark-tower", name: "Shark Tower", location: "Puerto Cancún", status: "Venta", towers: 1, constructionDate: "2019", deliveryDate: "2022", roi: 9.8, salesPercentage: 95, occupancyEstimate: 80, priceRange: "$1.2M - $4M USD", amenitiesList: ["Laboratorio de Tiburones", "Alberca Infinity", "Cine"], details: "Diseño icónico en forma de aleta de tiburón. Consolidado en el mercado." },
-                { id: "sls-cancun", name: "SLS Cancún", location: "Puerto Cancún", status: "Venta", towers: 1, constructionDate: "2018", deliveryDate: "2021", roi: 11.2, salesPercentage: 100, occupancyEstimate: 90, priceRange: "$1.5M - $5M USD", amenitiesList: ["Playa Privada", "Cancha de Tenis", "Restaurante de Autor"], details: "Desarrollo de súper lujo ya consolidado, alta demanda de reventa." }
-            ]
-        };
+        let charts = {};
 
-        const responseSchema = {
-            type: "OBJECT",
-            properties: {
-                marketOverview: { type: "OBJECT", properties: { averageRoi: { type: "NUMBER" }, averageOccupancy: { type: "NUMBER" }, totalPropertiesTracked: { type: "NUMBER" }, marketTrend: { type: "STRING" } } },
-                properties: { type: "ARRAY", items: { type: "OBJECT", properties: { id: { type: "STRING" }, name: { type: "STRING" }, location: { type: "STRING" }, status: { type: "STRING" }, towers: { type: "NUMBER" }, constructionDate: { type: "STRING" }, deliveryDate: { type: "STRING" }, roi: { type: "NUMBER" }, salesPercentage: { type: "NUMBER" }, occupancyEstimate: { type: "NUMBER" }, priceRange: { type: "STRING" }, amenitiesList: { type: "ARRAY", items: { type: "STRING" } }, details: { type: "STRING" } }, required: ["id", "name", "location", "status", "towers", "deliveryDate", "roi", "salesPercentage", "occupancyEstimate"] } }
-            },
-            required: ["marketOverview", "properties"]
-        };
-
-        // --- ESTADO LOCAL ---
-        let currentTab = 'dashboard';
-        let timeUntilNext = 8 * 60 * 60; // 8 horas
-        let charts = { roi: null, salesOcc: null, radar: null };
-
-        // Configuración global de Chart.js para Dark Mode
-        Chart.defaults.color = '#94a3b8';
-        Chart.defaults.borderColor = '#334155';
-        Chart.defaults.font.family = "ui-sans-serif, system-ui, sans-serif";
-
-        // --- INICIALIZACIÓN ---
-        window.onload = () => {
-            lucide.createIcons();
-            startTimer();
-            updateUI();
-            fetchMarketData(); // Llamada inicial simulada/real
-        };
-
-        // --- NAVEGACIÓN ---
         function setTab(tabId) {
-            currentTab = tabId;
-            ['dashboard', 'compare', 'table'].forEach(id => {
-                document.getElementById(`view-${id}`).classList.add('hidden');
-                document.getElementById(`tab-btn-${id}`).className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800/50';
-            });
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-${tabId}`).className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-800 text-blue-400 shadow';
-            
-            // Renderizar gráficos si se navega a su pestaña
-            if(tabId === 'dashboard') renderDashboardCharts();
-            if(tabId === 'compare') renderRadarChart();
+            document.getElementById('view-dashboard').classList.toggle('hidden', tabId !== 'dashboard');
+            document.getElementById('view-table').classList.toggle('hidden', tabId !== 'table');
+            if(tabId === 'dashboard') renderCharts();
         }
 
-        // --- TEMPORIZADOR ---
-        function startTimer() {
-            setInterval(() => {
-                timeUntilNext--;
-                if(timeUntilNext <= 0) {
-                    fetchMarketData();
-                    timeUntilNext = 8 * 60 * 60;
-                }
-                const h = Math.floor(timeUntilNext / 3600);
-                const m = Math.floor((timeUntilNext % 3600) / 60);
-                const s = timeUntilNext % 60;
-                document.getElementById('timer-display').innerText = `${h}h ${m}m ${s}s`;
-            }, 1000);
-        }
-
-        // --- OBTENCIÓN DE DATOS (GEMINI API) ---
-        async function fetchMarketData() {
-            setLoading(true);
-            const prompt = `
-            Eres un analista experto en bienes raíces de lujo. Investiga en la red (usando Google Search) información MUY detallada y actualizada al día de hoy sobre desarrollos inmobiliarios y departamentos de lujo en preventa y venta en Cancún y la Riviera Maya. 
-            Reglas:
-            1. Debes incluir SIEMPRE a 'Nautica Residences' como uno de los desarrollos principales. Su ID debe ser 'nautica-res'.
-            2. Investiga y agrega al menos otros 8 a 15 desarrollos competidores reales.
-            3. Estima porcentajes reales de ventas (0-100), ocupación (0-100) y ROI anual esperado (%).
-            4. Extrae detalles completos: entrega, amenidades, torres, rango de precios.
-            Devuelve ESTRICTAMENTE en formato JSON validado según el esquema.`;
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                tools: [{ google_search: {} }],
-                generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema }
-            };
-
-            try {
-                // Lógica de reintentos
-                let response = null;
-                for(let i=0; i<3; i++) {
-                    response = await fetch(MODEL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if(response.ok) break;
-                    await new Promise(r => setTimeout(r, 2000));
-                }
-
-                if(!response || !response.ok) throw new Error("Fallo en la comunicación con la API.");
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content?.parts?.[0]?.text) {
-                    appData = JSON.parse(result.candidates[0].content.parts[0].text);
-                    document.getElementById('last-update').innerText = new Date().toLocaleString();
-                    timeUntilNext = 8 * 60 * 60;
-                    document.getElementById('alert-error').classList.add('hidden');
-                    updateUI();
-                } else {
-                    throw new Error("Formato de respuesta JSON inválido.");
-                }
-            } catch (err) {
-                console.error(err);
-                document.getElementById('error-message').innerText = "Usando datos cacheados. Motivo: " + err.message;
-                document.getElementById('alert-error').classList.remove('hidden');
-                updateUI(); // Renderizar con fallbackData
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function setLoading(isLoading) {
-            const btn = document.getElementById('btn-refresh');
-            const icon = document.getElementById('icon-refresh');
-            const overlay = document.getElementById('loading-overlay');
-            
-            if(isLoading) {
-                btn.disabled = true;
-                icon.classList.add('animate-spin');
-                overlay.classList.remove('hidden');
-            } else {
-                btn.disabled = false;
-                icon.classList.remove('animate-spin');
-                overlay.classList.add('hidden');
-            }
-        }
-
-        // --- ACTUALIZACIÓN DE INTERFAZ ---
         function updateUI() {
-            // Actualizar KPIs
-            const nautica = appData.properties.find(p => p.id === 'nautica-res') || appData.properties[0];
-            document.getElementById('kpi-tracked').innerText = appData.marketOverview.totalPropertiesTracked || appData.properties.length;
-            document.getElementById('kpi-avg-roi').innerText = (appData.marketOverview.averageRoi || 0).toFixed(1) + '%';
-            document.getElementById('kpi-nautica-roi').innerText = (nautica.roi || 0) + '%';
-            document.getElementById('kpi-avg-occ').innerText = (appData.marketOverview.averageOccupancy || 0).toFixed(1) + '%';
-            document.getElementById('trend-text').innerText = appData.marketOverview.marketTrend;
-
-            // Llenar Selectores del Comparador
-            const s1 = document.getElementById('select-prop-1');
-            const s2 = document.getElementById('select-prop-2');
-            s1.innerHTML = ''; s2.innerHTML = '';
-            appData.properties.forEach(p => {
-                s1.innerHTML += `<option value="${p.id}" ${p.id === 'nautica-res' ? 'selected' : ''}>${p.name}</option>`;
-                s2.innerHTML += `<option value="${p.id}" ${p.id !== 'nautica-res' && s2.children.length === 0 ? 'selected' : ''}>${p.name}</option>`;
-            });
-
-            // Llenar Tabla
             const tbody = document.getElementById('table-body');
-            document.getElementById('table-count').innerText = `${appData.properties.length} resultados`;
-            tbody.innerHTML = appData.properties.map(prop => `
-                <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${prop.id === 'nautica-res' ? 'bg-blue-900/10' : ''}">
-                    <td class="p-4">
-                        <div class="font-semibold text-white flex items-center gap-2">
-                            ${prop.id === 'nautica-res' ? '<i data-lucide="shield" class="w-4 h-4 text-blue-400"></i>' : ''}
-                            ${prop.name}
-                        </div>
-                        <div class="text-xs text-slate-500 truncate max-w-[200px]" title="${prop.details}">${prop.details}</div>
-                    </td>
-                    <td class="p-4 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> ${prop.location}</td>
-                    <td class="p-4">
-                        <span class="px-2 py-1 rounded-full text-xs font-medium ${prop.status.toLowerCase().includes('preventa') ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}">
-                            ${prop.status}
-                        </span>
-                    </td>
-                    <td class="p-4">${prop.towers}</td>
-                    <td class="p-4 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> ${prop.deliveryDate}</td>
-                    <td class="p-4 font-bold text-emerald-400">${prop.roi}%</td>
-                    <td class="p-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-500" style="width: ${prop.salesPercentage}%"></div>
-                            </div>
-                            <span class="text-xs">${prop.salesPercentage}%</span>
-                        </div>
-                    </td>
-                    <td class="p-4 text-xs font-mono">${prop.priceRange}</td>
+            tbody.innerHTML = properties.map(p => `
+                <tr class="border-b border-slate-700/50">
+                    <td class="p-4">${p.name}</td>
+                    <td class="p-4">${p.roi}%</td>
+                    <td class="p-4">${p.sales}%</td>
+                    <td class="p-4"><button onclick="editProp('${p.id}')" class="text-blue-400 hover:underline">Editar</button></td>
                 </tr>
             `).join('');
-
-            updateCompareView();
-            renderDashboardCharts();
-            lucide.createIcons();
         }
 
-        // --- GRÁFICOS (CHART.JS) ---
-        function renderDashboardCharts() {
-            if(currentTab !== 'dashboard') return;
-
-            // Datos procesados
-            const topProps = [...appData.properties].sort((a, b) => b.roi - a.roi).slice(0, 7);
-            const labels = topProps.map(p => p.name.length > 15 ? p.name.substring(0,15)+'...' : p.name);
-            
-            // ROI Chart
-            if(charts.roi) charts.roi.destroy();
-            const ctxRoi = document.getElementById('roiChart').getContext('2d');
-            charts.roi = new Chart(ctxRoi, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'ROI (%)',
-                        data: topProps.map(p => p.roi),
-                        backgroundColor: topProps.map(p => p.id === 'nautica-res' ? '#3b82f6' : '#64748b'),
-                        borderRadius: 4
-                    }]
-                },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            // Sales vs Occupancy Chart
-            const allLabels = appData.properties.map(p => p.name.substring(0, 10));
-            if(charts.salesOcc) charts.salesOcc.destroy();
-            const ctxSales = document.getElementById('salesOccChart').getContext('2d');
-            charts.salesOcc = new Chart(ctxSales, {
-                type: 'line',
-                data: {
-                    labels: allLabels,
-                    datasets: [
-                        { label: 'Ventas %', data: appData.properties.map(p => p.salesPercentage), borderColor: '#3b82f6', tension: 0.3, borderWidth: 3 },
-                        { label: 'Ocupación %', data: appData.properties.map(p => p.occupancyEstimate), borderColor: '#10b981', tension: 0.3, borderWidth: 3 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function renderRadarChart() {
-            if(currentTab !== 'compare') return;
-            const id1 = document.getElementById('select-prop-1').value;
-            const id2 = document.getElementById('select-prop-2').value;
-            const p1 = appData.properties.find(p => p.id === id1) || appData.properties[0];
-            const p2 = appData.properties.find(p => p.id === id2) || appData.properties[1] || appData.properties[0];
-
-            if(charts.radar) charts.radar.destroy();
-            const ctxRadar = document.getElementById('radarChart').getContext('2d');
-            charts.radar = new Chart(ctxRadar, {
-                type: 'radar',
-                data: {
-                    labels: ['ROI (x5)', 'Ventas %', 'Ocupación %', 'Amenidades (Puntos)', 'Exclusividad (Torres Inverso)'],
-                    datasets: [
-                        {
-                            label: p1.name,
-                            data: [p1.roi * 5, p1.salesPercentage, p1.occupancyEstimate, (p1.amenitiesList?.length || 0)*20, 100/(p1.towers || 1)],
-                            backgroundColor: 'rgba(59, 130, 246, 0.4)',
-                            borderColor: '#3b82f6',
-                            borderWidth: 2
-                        },
-                        {
-                            label: p2.name,
-                            data: [p2.roi * 5, p2.salesPercentage, p2.occupancyEstimate, (p2.amenitiesList?.length || 0)*20, 100/(p2.towers || 1)],
-                            backgroundColor: 'rgba(16, 185, 129, 0.4)',
-                            borderColor: '#10b981',
-                            borderWidth: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { r: { angleLines: { color: '#334155' }, grid: { color: '#334155' }, ticks: { display: false }, pointLabels: { color: '#94a3b8', font: { size: 10 } } } }
-                }
-            });
-
-            // Set Winners
-            document.getElementById('winner-roi').innerText = (p1.roi >= p2.roi) ? p1.name : p2.name;
-            document.getElementById('winner-sales').innerText = (p1.salesPercentage >= p2.salesPercentage) ? p1.name : p2.name;
-        }
-
-        // --- ACTUALIZAR COLUMNAS COMPARADOR ---
-        function updateCompareView() {
-            const id1 = document.getElementById('select-prop-1').value;
-            const id2 = document.getElementById('select-prop-2').value;
-            const p1 = appData.properties.find(p => p.id === id1) || appData.properties[0];
-            const p2 = appData.properties.find(p => p.id === id2) || appData.properties[1] || appData.properties[0];
-
-            const renderCol = (prop, isMain) => `
-                <div class="p-6 rounded-2xl border h-full ${isMain ? 'bg-blue-900/20 border-blue-500/50' : 'bg-slate-800 border-slate-700'}">
-                    <div class="mb-6">
-                        ${isMain ? `<div class="text-blue-400 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3"></i> Referencia</div>` : ''}
-                        <h2 class="text-2xl font-bold text-white">${prop.name}</h2>
-                        <p class="text-slate-400 flex items-center gap-1 mt-1 text-sm"><i data-lucide="map-pin" class="w-4 h-4"></i> ${prop.location}</p>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
-                                <p class="text-slate-500 text-xs mb-1">ROI</p>
-                                <p class="text-xl font-bold text-emerald-400">${prop.roi}%</p>
-                            </div>
-                            <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
-                                <p class="text-slate-500 text-xs mb-1">Ventas</p>
-                                <p class="text-xl font-bold text-blue-400">${prop.salesPercentage}%</p>
-                            </div>
-                        </div>
-                        <div class="border-t border-slate-700/50 pt-4 space-y-3">
-                            <div class="flex justify-between items-center"><span class="text-slate-400 text-sm">Estado</span><span class="text-white text-sm font-medium">${prop.status}</span></div>
-                            <div class="flex justify-between items-center"><span class="text-slate-400 text-sm">Entrega</span><span class="text-white text-sm font-medium">${prop.deliveryDate}</span></div>
-                            <div class="flex justify-between items-center"><span class="text-slate-400 text-sm">Rango Precio</span><span class="text-white text-xs font-mono">${prop.priceRange}</span></div>
-                        </div>
-                        <div class="border-t border-slate-700/50 pt-4">
-                            <span class="text-slate-400 text-sm mb-2 block">Amenidades</span>
-                            <div class="flex flex-wrap gap-2">
-                                ${prop.amenitiesList.map(am => `<span class="bg-slate-700/50 border border-slate-600 text-slate-300 text-xs px-2 py-1 rounded">${am}</span>`).join('')}
-                            </div>
-                        </div>
-                        <div class="border-t border-slate-700/50 pt-4">
-                            <p class="text-slate-300 text-xs leading-relaxed bg-slate-900/50 p-3 rounded-lg italic">"${prop.details}"</p>
-                        </div>
-                    </div>
-                </div>
+        function editProp(id) {
+            const p = properties.find(x => x.id === id);
+            document.getElementById('edit-form').innerHTML = `
+                <input type="hidden" id="edit-id" value="${p.id}">
+                <label>Nombre: <input id="edit-name" value="${p.name}" class="w-full bg-slate-800 p-2 mt-1"></label>
+                <label>ROI (%): <input id="edit-roi" value="${p.roi}" class="w-full bg-slate-800 p-2 mt-1"></label>
+                <label>Ventas (%): <input id="edit-sales" value="${p.sales}" class="w-full bg-slate-800 p-2 mt-1"></label>
             `;
-
-            document.getElementById('compare-col-1').innerHTML = renderCol(p1, p1.id === 'nautica-res');
-            document.getElementById('compare-col-2').innerHTML = renderCol(p2, p2.id === 'nautica-res');
-            
-            lucide.createIcons();
-            renderRadarChart();
+            document.getElementById('edit-modal').classList.remove('hidden');
         }
+
+        function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            const p = properties.find(x => x.id === id);
+            p.name = document.getElementById('edit-name').value;
+            p.roi = parseFloat(document.getElementById('edit-roi').value);
+            p.sales = parseFloat(document.getElementById('edit-sales').value);
+            localStorage.setItem('riviera_data', JSON.stringify(properties));
+            closeModal();
+            updateUI();
+            renderCharts();
+        }
+
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        function renderCharts() {
+            if(charts.roi) charts.roi.destroy();
+            charts.roi = new Chart(document.getElementById('roiChart'), { type: 'bar', data: { labels: properties.map(p=>p.name), datasets: [{ data: properties.map(p=>p.roi), backgroundColor: '#3b82f6' }] } });
+        }
+
+        window.onload = () => { updateUI(); renderCharts(); lucide.createIcons(); };
     </script>
 </body>
 </html>
