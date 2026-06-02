@@ -379,7 +379,9 @@
             }
 
             setLoading(true);
-            const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key=${API_KEY}`;
+            
+            // 1. CAMBIADO: Usar el modelo público estable gemini-1.5-pro
+            const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`;
             
             const prompt = `
             Eres un analista experto en bienes raíces de lujo. Investiga en la red (usando Google Search) información MUY detallada y actualizada al día de hoy sobre desarrollos inmobiliarios y departamentos de lujo en preventa y venta en Cancún y la Riviera Maya. 
@@ -393,20 +395,21 @@
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
-                tools: [{ google_search: {} }],
+                // 2. CAMBIADO: Sintaxis correcta para invocar Google Search en la API
+                tools: [{ googleSearch: {} }],
                 generationConfig: { responseMimeType: "application/json", responseSchema: responseSchema }
             };
 
             try {
-                // Lógica de reintentos
-                let response = null;
-                for(let i=0; i<3; i++) {
-                    response = await fetch(MODEL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if(response.ok) break;
-                    await new Promise(r => setTimeout(r, 2000));
+                // 3. CAMBIADO: Capturador de errores avanzado
+                let response = await fetch(MODEL_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                
+                if(!response.ok) {
+                    const errData = await response.json();
+                    const errorMsg = errData.error?.message || "Error desconocido";
+                    throw new Error(`Google API respondió: ${errorMsg}`);
                 }
 
-                if(!response || !response.ok) throw new Error("Fallo en la comunicación con la API.");
                 const result = await response.json();
                 
                 if (result.candidates && result.candidates[0].content?.parts?.[0]?.text) {
