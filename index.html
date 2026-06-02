@@ -254,8 +254,14 @@
 
     <script>
         // --- CONFIGURACIÓN E IA ---
-        const API_KEY = ""; // El entorno inyectará esto o pon aquí tu clave de Google AI Studio
-        const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        // ATENCIÓN: Las API Keys nunca deben estar expuestas en el código frontend en producción.
+        // GitHub te bloqueó el commit porque detectarón la clave expuesta.
+        // Para entornos de desarrollo local o demostraciones privadas, descomenta la siguiente línea y pega tu clave.
+        // const API_KEY = "TU_API_KEY_AQUI"; 
+        
+        // Para evitar bloqueos en GitHub, dejamos la clave vacía o usamos una variable de entorno si tuvieras un backend.
+        const API_KEY = ""; 
+        const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
 
         let appData = {
             marketOverview: { averageRoi: 11.2, averageOccupancy: 76, totalPropertiesTracked: 20, marketTrend: "Alta demanda en zona hotelera y Puerto Cancún. Fuerte interés de nómadas digitales e inversionistas extranjeros." },
